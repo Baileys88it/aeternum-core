@@ -1,0 +1,11 @@
+{
+  "profile_id": "1.60.1.70790",
+  "client_build": 70790,
+  "notes": "IE-M2 Discovery stub — capability flags to replace scattered ClassicOpcodes::IsBuild* checks in later blocks.",
+  "gates": {
+    "build_ge_70291": true,
+    "build_ge_70425": true,
+    "unit_data_layout": "70425",
+    "active_player_data_layout": "70425"
+  }
+}

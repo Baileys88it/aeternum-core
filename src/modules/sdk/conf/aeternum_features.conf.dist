@@ -1,0 +1,128 @@
+[aeternum_features]
+#
+# Aeternum Engine — overlay toggle (template operatore)
+#
+# ISTRUZIONI DI CARICAMENTO
+#   I file *.conf.dist in questa cartella sono SOLO template.
+#   worldserver carica worldserver.conf.d/*.conf, NON i file .dist.
+#   Per attivare questo overlay:
+#     copy aeternum_features.conf.dist  aeternum_features.conf
+#   Poi modifica il file .conf. Riavvia worldserver dopo le modifiche.
+#   Lasciare solo il .dist non ha alcun effetto.
+#
+# Tutti i flag sotto restano DISATTIVATI (0 / vuoto) di default.
+# Non accendere NativeRuntime, Edge, TelemetryHttp o ECS se non lo richiedi esplicitamente.
+#
+# Admin.* e' documentato anche in admin_monitoring.conf.dist (stessi default).
+# Se copi entrambi gli overlay in .conf, per le chiavi duplicate vince il file caricato per ultimo.
+#
+
+###################################################################################################
+# Aeternum.Modules.*  — loader nativo drop-in (IE-M3)
+###################################################################################################
+#
+# Un modulo nativo si carica da:
+#   <Aeternum.Modules.ManifestDir>/<id>/module.manifest.json + la library indicata nel manifest
+# Se ManifestDir e' vuoto: <directory di worldserver.conf>/modules
+#
+# Aeternum.Modules.NativeRuntime DEVE essere 1 per caricare moduli nativi (.dll/.so).
+# Default 0: i file in modules/ non vengono eseguiti come codice nativo.
+#
+
+Aeternum.Modules.NativeRuntime = 0
+Aeternum.Modules.ManifestDir = ""
+Aeternum.Modules.RequireManifest = 0
+Aeternum.Modules.HotReload = 0
+
+###################################################################################################
+# Aeternum.Edge.*  — mesh / relay TCP in-process (linea M13)
+###################################################################################################
+#
+# NOTA: Aeternum.Edge.Enable e' IGNORATO dal core di worldserver.
+# StartEdge() scrive solo un warning e non apre un listener.
+# Il trasporto edge e' aeternum_gateway.exe (M15), lanciato a parte con --backend.
+# Lasciare Enable = 1 produce soltanto un warning; non avvia una mesh nel processo world.
+#
+
+Aeternum.Edge.Enable = 0
+Aeternum.Edge.BindIP = "127.0.0.1"
+Aeternum.Edge.Port = 0
+Aeternum.Edge.MaxSessions = 128
+Aeternum.Edge.ConnectTimeoutMs = 2000
+Aeternum.Edge.IdleTimeoutMs = 30000
+Aeternum.Edge.BackendAddresses = ""
+Aeternum.Edge.BackendPorts = ""
+
+###################################################################################################
+# Aeternum.TelemetryHttp.*  — telemetry HTTP (CMake: M12 Phase2)
+###################################################################################################
+#
+# Default OFF. Se lo accendi, il bind deve restare loopback e serve un token Admin.
+# Non esporre questo endpoint.
+#
+
+Aeternum.TelemetryHttp.Enable = 0
+Aeternum.TelemetryHttp.Port = 0
+Aeternum.TelemetryHttp.BindIP = "127.0.0.1"
+
+###################################################################################################
+# Aeternum.ECS.*  — ownership mappa ECS (default off)
+###################################################################################################
+
+Aeternum.ECS.Enabled = 0
+Aeternum.ECS.OwnedMapId = -1
+Aeternum.ECS.OwnedInstanceId = -1
+Aeternum.ECS.Capacity = 1024
+Aeternum.ECS.Workers = 16
+
+###################################################################################################
+# Admin.*  — Admin HTTP API (default OFF, solo loopback)
+###################################################################################################
+#
+# Preferisci le variabili d'ambiente per i token (Admin.TokenFromEnv / Admin.OperatorTokenFromEnv).
+# Non committare mai un token reale. I valori dei token non vengono scritti in Server.log.
+# Il bind deve restare loopback. Non esporre la porta Admin.
+#
+
+Admin.Enable = 0
+Admin.BindIP = "127.0.0.1"
+Admin.Port = 0
+Admin.Token = ""
+Admin.TokenFromEnv = "AETERNUM_ADMIN_TOKEN"
+Admin.TokenMinLength = 32
+Admin.AuthFailMax = 10
+Admin.AuthFailWindowSec = 60
+Admin.AuditLogFile = "Logs/admin_audit.log"
+Admin.AuditRotateMB = 2
+Admin.AuditKeepRotated = 3
+Admin.MetricsDenseDefault = 0
+Admin.MetricsTopN = 20
+Admin.OperatorToken = ""
+Admin.OperatorTokenFromEnv = "AETERNUM_ADMIN_OPERATOR_TOKEN"
+Admin.Drain.Enable = 0
+Admin.Drain.MinDelaySec = 120
+
+###################################################################################################
+# NETWORK  — porta di ascolto del world e interfaccia di bind
+###################################################################################################
+#
+# worldserver.conf controlla solo la porta di ascolto del processo e l'interfaccia di bind.
+# L'indirizzo pubblico e quello locale/LAN che il CLIENT usa per raggiungere il WORLD
+# non stanno in questo file: stanno nella tabella realmlist del database auth.
+#   realmlist.address       = hostname o indirizzo pubblico
+#   realmlist.localAddress  = hostname o indirizzo locale/LAN
+#   realmlist.port          = deve coincidere con WorldServerPort
+#
+# Le chiavi sotto sono COMMENTATE. Copiarle in aeternum_features.conf non sovrascrive
+# worldserver.conf finche' non togli il # e compili i valori.
+#
+# WorldServerPort
+#     Porta TCP di ascolto del world.
+#     Esempio stack isolata Aeternum: 18085
+#
+# BindIP
+#     Interfaccia di ascolto del processo (esempio 0.0.0.0 = tutte le interfacce).
+#
+# WorldServerPort = 18085
+# BindIP = "0.0.0.0"
+#

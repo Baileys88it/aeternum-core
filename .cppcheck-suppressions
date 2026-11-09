@@ -1,0 +1,7 @@
+# Aeternum M2 — cppcheck suppressions proposal (NOT enforced).
+# Keep narrow; prefer fixing real issues over blanket ignores.
+*:dep/*
+*:tests/*
+unmatchedSuppression
+missingIncludeSystem
+unusedFunction

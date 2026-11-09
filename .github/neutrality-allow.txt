@@ -1,0 +1,16 @@
+# Paths skipped by contrib/neutrality/check_neutrality.py.
+# Only third-party or upstream TrinityCore files that are kept byte-identical belong here.
+dep/*
+sql/old/*
+sql/base/*
+docs/assets/*
+
+# Upstream copyright / author attributions (license notices must stay intact)
+AUTHORS
+.circleci/*
+appveyor.yml
+cmake/macros/EnsureVersion.cmake
+contrib/conf_merge/*
+contrib/protoc-bnet/*
+# Upstream client-protocol constant: the login hostname the game client expects (functional, not a server reference)
+src/server/game/Handlers/AuthHandler.cpp

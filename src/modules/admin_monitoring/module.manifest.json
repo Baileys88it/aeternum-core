@@ -1,0 +1,7 @@
+{
+  "id": "admin.monitoring",
+  "version": "0.3.0",
+  "abiVersion": 1,
+  "loadPolicy": "on-boot-only",
+  "critical": false
+}

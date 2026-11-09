@@ -1,0 +1,13 @@
+{
+  "profileId": "1.60.1.70790",
+  "build": 70790,
+  "version": 1,
+  "description": "IE-M1 golden corpus index — synthetic remap fixtures first; live captures later (Aeternum only).",
+  "samples": [
+    {
+      "path": "samples/70790_create_remap.jsonl",
+      "kind": "opcode_remap",
+      "notes": "Regression for CREATE character ExtraInserts (known good vs known bad inserts)."
+    }
+  ]
+}

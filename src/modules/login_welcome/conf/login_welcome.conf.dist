@@ -1,0 +1,14 @@
+[login_welcome]
+#
+# Centered welcome when a character enters the world (not Battle.net login).
+#
+# worldserver loads worldserver.conf.d/*.conf only. *.conf.dist is a template.
+# Copy this file to login_welcome.conf to override worldserver.conf.
+# Files in worldserver.conf.d are applied after worldserver.conf; the same key wins here.
+# An empty value sends nothing.
+#
+# The text is English by default. It is sent as SMSG_CHAT with CHAT_MSG_RAID_BOSS_EMOTE,
+# the large centered announcement. Motd stays a separate chat-box system message.
+#
+
+Aeternum.Welcome.Message = "Welcome to Aeternum."

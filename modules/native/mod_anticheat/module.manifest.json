@@ -1,0 +1,17 @@
+{
+  "id": "mod_anticheat",
+  "version": "0.2.0",
+  "abiVersion": 1,
+  "runtime": "native",
+  "library": "mod_anticheat.dll",
+  "loadPolicy": "on-boot-only",
+  "critical": false,
+  "integrity": {
+    "files": [
+      {
+        "path": "mod_anticheat.dll",
+        "sha256": "c69ebeb65d1a4e603f7294987d7128e05447965dc849a83def7a2c4e750aee8e"
+      }
+    ]
+  }
+}

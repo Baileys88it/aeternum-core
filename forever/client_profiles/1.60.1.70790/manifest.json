@@ -1,0 +1,56 @@
+{
+  "profile_id": "1.60.1.70790",
+  "product": "1.60.1",
+  "client_build": 70790,
+  "label": "Forever Classic 1.60.1 build 70790",
+  "status": "active",
+  "runtime_loaded": "extra_inserts_auto_apply",
+  "notes": "M4 foundation: ACTIVE pointer, Forever C++ helpers, seams docs, Catch2 must-not-break gate. M6: ExtraInserts auto-apply at startup when Classic.ProfileExtraInserts.AutoApply enabled.",
+  "extra_inserts": {
+    "Classic.ClientExtraInserts": [
+      "0x440071",
+      "0x440072"
+    ],
+    "Classic.ServerExtraInserts": [
+      "0x470125"
+    ]
+  },
+  "critical_client_opcodes": {
+    "CMSG_CREATE_CHARACTER": {
+      "wire": "0x440070",
+      "core_after_remap": "0x430070"
+    },
+    "CMSG_CHECK_CHARACTER_NAME_AVAILABILITY": {
+      "wire": "0x440073",
+      "core_after_remap": "0x430071"
+    }
+  },
+  "auth": {
+    "bnet_port": 1119,
+    "world_port": 8085,
+    "realm_gamebuild": 70790,
+    "build_info_required": true
+  },
+  "created": "2026-11-05",
+  "authors": [
+    "Aeternum M2",
+    "Aeternum M4",
+    "Aeternum M6"
+  ],
+  "case_studies": [
+    "CASE_STUDIES/70755_to_70790_create_char.md"
+  ],
+  "load_policy": "on-boot-only",
+  "integrity": {
+    "files": [
+      {
+        "path": "opcodes/opcodes.json",
+        "sha256": "4c7f611ab249d800b304a3eb75ab73a007f44b385b9f53e51eb190b8ad441ee1"
+      },
+      {
+        "path": "opcodes/unknown_policy.json",
+        "sha256": "7133d4aa7c30ce0b185879f800a552fdd8d1805388a6c5ceef694173a6be4867"
+      }
+    ]
+  }
+}

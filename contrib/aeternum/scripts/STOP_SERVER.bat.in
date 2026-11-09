@@ -1,0 +1,14 @@
+@echo off
+setlocal EnableExtensions
+cd /d "%~dp0"
+title Aeternum STOP_SERVER
+
+echo(
+echo === Aeternum Engine - STOP_SERVER ===
+echo Runtime folder: %CD%
+echo Stops ONLY bnetserver/worldserver whose executable path is under this folder.
+echo IT: Arresto graduale con announce + server shutdown 120s, poi force solo sui PID di questo path.
+echo EN: Graceful announce + server shutdown 120s, then force only this folder's PIDs.
+echo(
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Stop-AeternumPathScoped.ps1" -RuntimeDir "%CD%" -ShutdownDelay 120 -ExitTimeoutSec 180 -WindowTitlePrefixes "Aeternum-bnetserver","Aeternum-worldserver"
+exit /b %ERRORLEVEL%

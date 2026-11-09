@@ -1,0 +1,64 @@
+[admin_monitoring]
+#
+# Aeternum Admin & Monitoring (M8) â€” READ ONLY.
+# Default OFF. Bind MUST stay loopback. Token is never written to Server.log.
+#
+
+Admin.Enable = 0
+Admin.BindIP = "127.0.0.1"
+Admin.Port = 0
+
+# Prefer env; never commit a real token.
+# Precedence: env (Admin.TokenFromEnv) wins over Admin.Token in conf.
+# If Admin.Token is non-empty, server WARNs at startup (value never logged).
+# Fail-fast for conf tokens is planned for a later version.
+# Per-instance: set Admin.TokenFromEnv to a distinct env var name (empty -> AETERNUM_ADMIN_TOKEN).
+Admin.Token = ""
+Admin.TokenFromEnv = "AETERNUM_ADMIN_TOKEN"
+# Refuse start if resolved token shorter than this (constant-time compare still used).
+Admin.TokenMinLength = 32
+
+# M8: rate-limit failed auth (401) per peer.
+Admin.AuthFailMax = 10
+Admin.AuthFailWindowSec = 60
+
+Admin.AuditLogFile = "Logs/admin_audit.log"
+Admin.AuditRotateMB = 2
+Admin.AuditKeepRotated = 3
+
+# Dense Prometheus scrape defaults for /metrics?dense=1 and /metrics/dense
+Admin.MetricsDenseDefault = 0
+Admin.MetricsTopN = 20
+
+###################################################################################################
+# Related Metric.* keys (worldserver.conf) for M8 dense scrape / budget
+###################################################################################################
+#Metric.DenseScrape = 0
+#Metric.Dense.SamplePercent = 10
+#Metric.Local.BudgetMB = 75
+#Metric.Local.RetentionDays = 14
+#Metric.Local.MaxSeries = 256
+
+#Logger.module.admin=4,Console Server
+#Logger.module.sdk=4,Console Server
+
+###################################################################################################
+# M9 — operator drain (DISABLED by default), crash store, config schema
+###################################################################################################
+# Operator token OPTIONAL (drain role). Distinct from readonly. Never commit.
+# Same precedence: env (OperatorTokenFromEnv) wins over conf OperatorToken.
+# Per-instance: set Admin.OperatorTokenFromEnv to a distinct env var (empty -> AETERNUM_ADMIN_OPERATOR_TOKEN).
+Admin.OperatorToken = ""
+Admin.OperatorTokenFromEnv = "AETERNUM_ADMIN_OPERATOR_TOKEN"
+# Admin.Drain.Enable — must stay 0 on production. Aeternum soak may set 1 for endpoint tests.
+Admin.Drain.Enable = 0
+Admin.Drain.MinDelaySec = 120
+# Crash dump disk budget (Wheaty writes under Crash.Directory; rotation on startup)
+Crash.Directory = ""
+Crash.BudgetMB = 256
+Crash.RetentionDays = 30
+# Config schema — required FAIL-fast; unknown WARN limited to Aeternum prefixes unless WarnUnknownAll
+Config.Schema.FailFast = 1
+Config.Schema.WarnUnknown = 1
+Config.Schema.WarnUnknownAll = 0
+# Config.Schema.Required = "RealmID,DataDir,LoginDatabaseInfo,WorldDatabaseInfo,CharacterDatabaseInfo"

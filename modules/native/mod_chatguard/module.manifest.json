@@ -1,0 +1,17 @@
+{
+  "id": "mod_chatguard",
+  "version": "0.2.1",
+  "abiVersion": 1,
+  "runtime": "native",
+  "library": "mod_chatguard.dll",
+  "loadPolicy": "on-boot-only",
+  "critical": false,
+  "integrity": {
+    "files": [
+      {
+        "path": "mod_chatguard.dll",
+        "sha256": "069f50c41f3f49374bc0e78046594880e05b5df069e18484a7a8585dec39378a"
+      }
+    ]
+  }
+}
