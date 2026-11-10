@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "profile_id": "1.60.1.70862",
+  "notes": "IE-M2 Blocco1. Integrity-covered (manifest.json integrity.files). Golden rule: ignored_known = drop + counter, ZERO log; unknown = drop + counter + rate-limited ERROR above threshold.",
+  "unknown": {
+    "window_ms": 10000,
+    "threshold_per_window": 50,
+    "max_errors_per_window": 1
+  },
+  "ignored_known": [
+    {
+      "logical": "0x3D013D",
+      "direction": "cmsg",
+      "name": "CMSG_UNIDENTIFIED_3D013D",
+      "decimal": 3998013,
+      "source": "<DOCS_ROOT>/IE_M2/RESEARCH_0x3D013D.md",
+      "notes": "Post-translation (logical) CMSG id sent once per world enter; unnamed slot between CMSG_SET_EMPOWER_MIN_HOLD_STAGE_PERCENT (0x3D013B) and CMSG_CANCEL_GROWTH_AURA (0x3D0140). Wire id derived by gen_opcode_table.py."
+    }
+  ]
+}

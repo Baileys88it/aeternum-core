@@ -1,0 +1,3 @@
+{"id":"create_good_inserts","wire":"0x440070","expect_core":"0x430070","inserts":["0x440071","0x440072"]}
+{"id":"checkname_good_inserts","wire":"0x440073","expect_core":"0x430071","inserts":["0x440071","0x440072"]}
+{"id":"create_bad_inserts_petbattle","wire":"0x440070","expect_core":"0x43006E","inserts":["0x440063","0x440064"]}

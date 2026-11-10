@@ -1,0 +1,18 @@
+@echo off
+setlocal
+title Aeternum START_TESTINST
+REM Path-aware start for isolated client test on Aeternum isolata ports 3119/28083/28085.
+REM Does NOT touch Trinity or _public_iem1.
+REM Generated from START_TESTINST.bat.in; ops copies to _testinst_iem1.
+cd /d @AETERNUM_TESTINST_ROOT_DIR@\bin
+powershell -NoProfile -ExecutionPolicy Bypass -File "@AETERNUM_TOOLS_DIR@\Test-AeternumAlreadyRunning.ps1" -RuntimeDir "%CD%"
+if not errorlevel 1 (
+  echo Already running from _testinst_iem1\bin - no duplicate start.
+  exit /b 0
+)
+REM Prefer env token if present; conf also has test Admin.Token.
+start "Aeternum-testinst-bnet" /D "%CD%" bnetserver.exe -c ..\conf\bnetserver.conf
+timeout /t 3 /nobreak >nul
+start "Aeternum-testinst-world" /D "%CD%" worldserver.exe -c ..\conf\worldserver.conf
+echo Started _testinst_iem1 on 3119/28083/28085 admin 127.0.0.1:9200
+exit /b 0

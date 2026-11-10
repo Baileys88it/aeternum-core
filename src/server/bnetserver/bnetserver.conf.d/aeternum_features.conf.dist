@@ -1,0 +1,62 @@
+[aeternum_features]
+#
+# Aeternum Engine — overlay bnetserver (template operatore)
+#
+# ISTRUZIONI DI CARICAMENTO
+#   I file *.conf.dist in questa cartella sono SOLO template.
+#   bnetserver carica bnetserver.conf.d/*.conf, NON i file .dist.
+#   Per attivare questo overlay:
+#     copy aeternum_features.conf.dist  aeternum_features.conf
+#   Poi modifica il file .conf. Riavvia bnetserver dopo le modifiche.
+#   Lasciare solo il .dist non ha alcun effetto.
+#
+# I toggle non standard dell'Aeternum Engine rilevati nell'audit sono chiavi WORLD:
+#   Aeternum.Modules.NativeRuntime   (world; default 0; obbligatorio = 1 per caricare moduli nativi)
+#   Aeternum.Edge.Enable             (world; IGNORATO dal core — il trasporto e' aeternum_gateway / M15)
+#   Aeternum.TelemetryHttp.Enable    (world; default 0)
+#   Aeternum.ECS.Enabled             (world; default 0)
+#   Admin.*                          (world; default OFF, solo loopback)
+#
+# Modificali copiando:
+#   ..\worldserver.conf.d\aeternum_features.conf.dist
+#   in aeternum_features.conf
+# Metterli in questo overlay bnet non ha effetto sul caricamento moduli ne' sulle feature world.
+#
+# CertificatesFile resta in bnetserver.conf. Questo file non sostituisce bnetserver.conf.
+#
+# NETWORK (sotto): indirizzo di riferimento e porte di login.
+# Le chiavi sono COMMENTATE. Copiarle in aeternum_features.conf non sovrascrive
+# bnetserver.conf finche' non togli il # e compili i valori.
+#
+
+###################################################################################################
+# NETWORK  — riferimento pubblico vs locale/LAN, e porte di login
+###################################################################################################
+#
+# BattlenetPort
+#     Porta TCP del login Battlenet.
+#     Esempio stack isolata Aeternum: 2119
+#
+# LoginREST.Port
+#     Porta TCP del login REST.
+#     Esempio stack isolata Aeternum: 18083
+#
+# LoginREST.ExternalAddress
+#     Hostname o indirizzo PUBBLICO per client e launcher fuori dalla LAN.
+#     Non lasciare ExternalAddress su loopback se il launcher o i client sono su un altro host:
+#     verrebbero indirizzati alla macchina locale e non raggiungerebbero bnetserver.
+#
+# LoginREST.LocalAddress
+#     Hostname o indirizzo locale/LAN per i client dentro la rete.
+#
+# BindIP
+#     Interfaccia di ascolto del processo (esempio 0.0.0.0 = tutte le interfacce).
+#     Non e' l'indirizzo che il client usa: quello e' ExternalAddress (pubblico)
+#     oppure LocalAddress (locale/LAN).
+#
+# BattlenetPort = 2119
+# LoginREST.Port = 18083
+# LoginREST.ExternalAddress = "SET_PUBLIC_HOSTNAME_OR_ADDRESS"
+# LoginREST.LocalAddress = "SET_LOCAL_HOSTNAME_OR_ADDRESS"
+# BindIP = "0.0.0.0"
+#

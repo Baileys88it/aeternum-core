@@ -1,0 +1,172 @@
+Aeternum Engine - Runtime folder guide
+======================================
+This folder is the per-config runtime output (example: build\bin\RelWithDebInfo).
+The helper scripts START_SERVER.bat / STOP_SERVER.bat / STATUS.bat / CHECK_CONFIG.bat
+are generated here by CMake on every build. Do not invent a separate server\ tree.
+
+This README is English-only by design. It lists the technologies this build uses
+and how to configure/start the isolated Aeternum stack. It never documents
+passwords, tokens, or non-local network addresses.
+
+
+1) Technologies to download / install (versions used by THIS build)
+-------------------------------------------------------------------
+- Git                          - clone and update the source tree
+- CMake                        - @AETERNUM_CMAKE_VERSION@
+- Visual Studio 2022           - @AETERNUM_VS_VERSION@
+                                 (Desktop development with C++ / MSVC toolset)
+- Visual C++ Redistributable   - matching VS 2022 x64 (for machines that only run binaries)
+- MySQL Community Server 8.0.x - @AETERNUM_MYSQL_VERSION@
+                                 Aeternum uses TCP port 3308 (keep other stacks on their own ports)
+- OpenSSL 3.x                  - @AETERNUM_OPENSSL_VERSION@
+                                 CMake also copies legacy.dll next to the executables
+                                 (OpenSSL 3.x legacy provider; silences 'failed to load legacy.dll')
+- Boost                        - @AETERNUM_BOOST_VERSION@
+- Python 3.x                   - @AETERNUM_PYTHON_VERSION@
+                                 (optional; needed only for some contrib/tools scripts)
+
+Optional on the build machine: a full Visual Studio 2022 Build Tools or IDE install
+with the MSVC v143 toolset and Windows 10/11 SDK.
+
+
+2) Database setup
+-----------------
+Create the isolated Aeternum schemas (names must stay aeternum_* so they never
+collide with other local stacks):
+
+  auth
+  characters
+  world
+  hotfixes
+
+A starter SQL script is copied next to this README as create_aeternum_dbs.sql.
+Run it with your local MySQL client against the instance that listens on port 3308.
+Grant a dedicated DB user of your choosing; put that user into the *.conf files
+locally. Do not commit credentials.
+
+Then import / update base SQL from the source tree (sql\ and any project-specific
+
+After importing auth SQL, set the realm display name to Aeternum
+(contrib/aeternum/sql/set_realm_name_aeternum.sql, or UPDATE realmlist SET name='Aeternum').
+Do not leave the default upstream name 'Trinity' on this stack.
+updates) into those four databases following the normal TrinityCore-style order
+(auth -> characters -> world -> hotfixes, plus updates).
+
+
+3) Config setup
+---------------
+After a build, this folder contains:
+
+  bnetserver.conf.dist
+  worldserver.conf.dist
+
+Copy each to the same name without .dist if the .conf does not exist yet:
+
+  copy bnetserver.conf.dist  bnetserver.conf
+  copy worldserver.conf.dist worldserver.conf
+
+Edit the .conf files locally:
+- Database connection lines for aeternum_* on port 3308
+- WorldServerPort / BattlenetPort / LoginREST.Port (defaults for this isolated stack
+  are World 18085, Battlenet 2119, LoginREST 18083 ? different from other local stacks)
+- LogsDir = "logs"   (relative folder created beside the executables)
+- DataDir / client data paths as required on your machine
+- LoginREST certificate paths (see below)
+
+Certificates / PEM files used by LoginREST and bnet are LOCAL ONLY.
+They are not stored in git. Place the PEM files this machine needs next to the
+binaries (or point the conf keys at your local cert paths).
+
+
+4) How to start / stop / status / check
+---------------------------------------
+From THIS folder:
+
+  CHECK_CONFIG.bat   - runs worldserver.exe --check-config
+  START_SERVER.bat   - TCP-checks MySQL 3308, starts bnet, waits for ports from conf,
+                       starts world, waits, prints PIDs/ports (never prints passwords)
+  STATUS.bat         - shows listen state for conf ports and processes whose path is
+                       under this folder; optional health probe if AETERNUM_HEALTH_TOKEN
+                       is set in the environment
+  STOP_SERVER.bat    - graceful stop of ONLY processes whose executable path is under
+                       this folder, with a 120s IT+EN countdown, then force-kill if needed
+
+Do not point these scripts at another stack's install folder.
+
+4b) Admin API token (localhost :9300)
+-------------------------------------
+Admin HTTP binds to 127.0.0.1 only. Never expose port 9300.
+
+Token precedence (resolved at worldserver start / conf reload):
+  1) Environment variable named by Admin.TokenFromEnv
+     (if Admin.TokenFromEnv is empty -> AETERNUM_ADMIN_TOKEN)
+  2) Else Admin.Token from worldserver.conf (PLAINTEXT — deprecated)
+If Admin.Token is non-empty in conf, the server logs a WARN without the value.
+Fail-fast for conf tokens is planned for a later version.
+Default Admin.TokenMinLength = 32.
+Operator token is OPTIONAL (Admin.OperatorTokenFromEnv / AETERNUM_ADMIN_OPERATOR_TOKEN).
+
+Per-instance: set a distinct Admin.TokenFromEnv in that instance's conf so two
+installations under the same Windows user do not share one token.
+
+Wizard (shipped beside the binaries):
+  Manage-AeternumAdminToken.ps1 -Action Generate|Rotate|Recover -RuntimeDir <this folder>
+  Uses RandomNumberGenerator; shows the token once; User-scope env; never logs the value.
+  Rotate/Recover restart THIS instance only when you pass -ConfirmRestart
+  (path-scoped stop with 120s IT+EN countdown). Does not touch Trinity or other instances.
+
+
+
+5) Ports (isolated Aeternum defaults)
+-------------------------------------
+  MySQL          3308
+  Battlenet      2119   (bnetserver.conf -> BattlenetPort)
+  LoginREST      18083  (bnetserver.conf -> LoginREST.Port)
+  World          18085  (worldserver.conf -> WorldServerPort)
+
+Always re-read the values from the .conf files; STATUS.bat and START_SERVER.bat do.
+
+
+6) Logs
+-------
+Default LogsDir for this layout:  .\logs
+(relative to this runtime folder). Check Server.log, DB errors, and bnet logs there.
+
+
+7) Troubleshooting
+------------------
+- Launcher / LoginREST certificate errors:
+  Confirm the PEM/chain files referenced by LoginREST.* and bnetserver cert/key
+  settings exist locally and match what the launcher trusts. Certs are not in git.
+
+- "Missing build auth key" / error 70790 style failures:
+  For local lab use you may set Network.SkipBuildAuthKeyCheck = 1 in worldserver.conf.
+  Do not enable that on a public realm.
+
+- Warning 'OpenSSL failed to load legacy.dll':
+  Rebuild so POST_BUILD copies OpenSSL's bin\legacy.dll next to worldserver/bnetserver.
+  Do not set OPENSSL_MODULES unless you know you need a custom modules path.
+
+- CHECK_CONFIG fails:
+  Fix database connectivity, missing DataDir files, or conf syntax, then re-run.
+
+- START_SERVER fails on MySQL 3308:
+  Start the MySQL 8.0 service and confirm it listens on 3308.
+
+- Wrong processes stopped:
+  STOP_SERVER only targets bnetserver.exe / worldserver.exe whose path is under
+  this folder. Other stacks in different directories are left alone.
+
+- Ports already in use:
+  Ensure no other process holds 2119 / 18083 / 18085, or change the conf ports.
+
+
+8) CMake regeneration
+---------------------
+Templates live in source under contrib/aeternum/scripts/*.bat.in and README.txt.in.
+Building worldserver/bnetserver copies the generated files into this runtime directory
+automatically (POST_BUILD). Rebuild after editing templates.
+
+Generated by CMake for Aeternum Engine.
+
+

@@ -1,0 +1,30 @@
+@echo off
+setlocal EnableExtensions
+cd /d "%~dp0"
+title Aeternum CHECK_CONFIG
+
+echo(
+echo === Aeternum Engine - CHECK_CONFIG ===
+echo Runtime folder: %CD%
+echo(
+if not exist "worldserver.exe" (
+  echo ERROR: worldserver.exe not found.
+  exit /b 1
+)
+if not exist "worldserver.conf" (
+  echo ERROR: worldserver.conf not found. Copy from worldserver.conf.dist first.
+  exit /b 1
+)
+
+echo Running: worldserver.exe --check-config
+echo(
+worldserver.exe --check-config
+set EC=%ERRORLEVEL%
+echo(
+if not "%EC%"=="0" (
+  echo CHECK_CONFIG failed with exit code %EC%. See console output and logs\.
+  exit /b %EC%
+)
+echo CHECK_CONFIG completed OK.
+exit /b 0
+

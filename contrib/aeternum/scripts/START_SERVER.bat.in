@@ -1,0 +1,118 @@
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+cd /d "%~dp0"
+title Aeternum START_SERVER
+
+echo(
+echo === Aeternum Engine - START_SERVER ===
+echo Runtime folder: %CD%
+echo(
+if not exist "bnetserver.exe" (
+  echo ERROR: bnetserver.exe not found in this folder. Build the server first.
+  exit /b 1
+)
+if not exist "worldserver.exe" (
+  echo ERROR: worldserver.exe not found in this folder. Build the server first.
+  exit /b 1
+)
+if not exist "bnetserver.conf" (
+  echo ERROR: bnetserver.conf missing. Copy bnetserver.conf.dist to bnetserver.conf and edit locally.
+  exit /b 1
+)
+if not exist "worldserver.conf" (
+  echo ERROR: worldserver.conf missing. Copy worldserver.conf.dist to worldserver.conf and edit locally.
+  exit /b 1
+)
+
+echo [0/5] Checking for already-running processes under this folder ...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Test-AeternumAlreadyRunning.ps1" -RuntimeDir "%CD%"
+if not errorlevel 1 (
+  echo Already running under this folder - not starting duplicate.
+  exit /b 0
+)
+echo [1/5] Checking MySQL TCP port 3308 ...
+powershell -NoProfile -Command "try { $c=New-Object Net.Sockets.TcpClient; $iar=$c.BeginConnect('127.0.0.1',3308,$null,$null); if(-not $iar.AsyncWaitHandle.WaitOne(3000,$false)){ $c.Close(); exit 1 }; $c.EndConnect($iar); $c.Close(); exit 0 } catch { exit 1 }"
+if errorlevel 1 (
+  echo ERROR: Nothing is accepting TCP connections on port 3308.
+  echo        Start MySQL 8.0 and confirm it listens on 3308 for Aeternum.
+  exit /b 1
+)
+echo       MySQL port 3308 is open.
+
+call :read_conf_int "bnetserver.conf" "BattlenetPort" BN_PORT
+call :read_conf_int "bnetserver.conf" "LoginREST.Port" REST_PORT
+call :read_conf_int "worldserver.conf" "WorldServerPort" WORLD_PORT
+if "!BN_PORT!"=="" set BN_PORT=2119
+if "!REST_PORT!"=="" set REST_PORT=18083
+if "!WORLD_PORT!"=="" set WORLD_PORT=18085
+echo       Ports from conf: Battlenet=!BN_PORT! LoginREST=!REST_PORT! World=!WORLD_PORT!
+
+echo [2/5] Starting bnetserver.exe ...
+start "Aeternum-bnetserver" /D "%CD%" bnetserver.exe
+powershell -NoProfile -Command "Start-Sleep -Seconds 2"
+
+echo [3/5] Waiting for bnet ports !BN_PORT! and !REST_PORT! ...
+call :wait_port !BN_PORT! 60
+if errorlevel 1 (
+  echo ERROR: BattlenetPort !BN_PORT! did not open in time. See logs\ and bnetserver console.
+  exit /b 1
+)
+call :wait_port !REST_PORT! 60
+if errorlevel 1 (
+  echo ERROR: LoginREST.Port !REST_PORT! did not open in time. See logs\ and bnetserver console.
+  exit /b 1
+)
+echo       bnet ports are listening.
+
+echo [4/5] Starting worldserver.exe ...
+start "Aeternum-worldserver" /D "%CD%" worldserver.exe
+powershell -NoProfile -Command "Start-Sleep -Seconds 3"
+
+echo [5/5] Waiting for WorldServerPort !WORLD_PORT! ...
+call :wait_port !WORLD_PORT! 180
+if errorlevel 1 (
+  echo ERROR: WorldServerPort !WORLD_PORT! did not open in time. See logs\ and worldserver console.
+  exit /b 1
+)
+
+echo(
+echo === Started ===
+call :print_pid_for bnetserver
+call :print_pid_for worldserver
+echo Ports: Battlenet=!BN_PORT! LoginREST=!REST_PORT! World=!WORLD_PORT!
+echo Logs:  %CD%\logs
+echo(
+exit /b 0
+
+:read_conf_int
+set "_file=%~1"
+set "_key=%~2"
+set "_out=%~3"
+set "%_out%="
+for /f "usebackq tokens=1,* delims==" %%A in (`findstr /R /C:"^%_key% *=" "%_file%" 2^>nul`) do (
+  set "_val=%%B"
+  set "_val=!_val: =!"
+  set "_val=!_val:"=!"
+  set "%_out%=!_val!"
+  goto :eof
+)
+goto :eof
+
+:wait_port
+set "_port=%~1"
+set "_secs=%~2"
+if "%_secs%"=="" set _secs=60
+for /l %%I in (1,1,%_secs%) do (
+  powershell -NoProfile -Command "try { if(Get-NetTCPConnection -LocalPort %_port% -State Listen -ErrorAction Stop){ exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+  if not errorlevel 1 exit /b 0
+  powershell -NoProfile -Command "Start-Sleep -Seconds 1"
+)
+exit /b 1
+
+:print_pid_for
+set "_proc=%~1"
+for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$here='%~dp0'.TrimEnd('\'); Get-Process -Name '%_proc%' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($here,[StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $_.Id }"`) do (
+  echo   %_proc%.exe PID=%%P
+)
+goto :eof
+

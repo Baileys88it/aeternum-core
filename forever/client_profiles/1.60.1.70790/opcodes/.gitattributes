@@ -1,0 +1,2 @@
+# M2-Blocco1: integrity-hashed profile data must keep exact bytes (no CRLF conversion).
+*.json -text

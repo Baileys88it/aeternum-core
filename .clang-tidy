@@ -1,0 +1,18 @@
+# Aeternum M2 — clang-tidy proposal (NOT enforced in CI).
+# Tune gradually; start with bugprone + performance subset.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  performance-*,
+  -performance-avoid-endl,
+  modernize-use-nullptr,
+  modernize-use-override,
+  readability-misleading-indentation
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/(server|common)/.*'
+FormatStyle: none
+CheckOptions:
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: ''

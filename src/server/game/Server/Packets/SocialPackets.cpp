@@ -1,0 +1,131 @@
+/*
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "SocialPackets.h"
+#include "PacketOperators.h"
+
+namespace WorldPackets::Social
+{
+void SendContactList::Read()
+{
+    // Aeternum: ported from jibay442/forever_docker (GPL-2.0) docker/patches/0003-classic-contact-list-request.patch
+    // Classic 1.60 puts one more byte (seen 0) before the flags: 00 15 00 00 00 / 00 11 00 00 00; a 4-byte payload is read as before.
+    // Count the payload from rpos: the buffer still holds the 4-byte opcode, so size() alone was always > 4 and a 4-byte
+    // payload (client 70862) skipped one byte and then over-read the flags (ByteBufferException, pos 5 size 8).
+    if (_worldPacket.size() - _worldPacket.rpos() > sizeof(uint32))
+        _worldPacket.read_skip<uint8>();
+
+    _worldPacket >> Flags;
+}
+
+ByteBuffer& operator<<(ByteBuffer& data, ContactInfo const& contact)
+{
+    data << contact.Guid;
+    data << contact.WowAccountGuid;
+    data << uint32(contact.VirtualRealmAddr);
+    data << uint32(contact.NativeRealmAddr);
+    data << uint32(contact.TypeFlags);
+    data << uint8(contact.Status);
+    data << uint32(contact.AreaID);
+    data << uint32(contact.Level);
+    data << int8(contact.ClassID);
+    data << SizedString::BitsSize<10>(contact.Notes);
+    data.FlushBits();
+
+    data << SizedString::Data(contact.Notes);
+
+    return data;
+}
+
+WorldPacket const* ContactList::Write()
+{
+    _worldPacket << uint32(Flags);
+    _worldPacket << BitsSize<8>(Contacts);
+    _worldPacket.FlushBits();
+
+    for (ContactInfo const& contact : Contacts)
+        _worldPacket << contact;
+
+    return &_worldPacket;
+}
+
+WorldPacket const* FriendStatus::Write()
+{
+    _worldPacket << uint8(FriendResult);
+    _worldPacket << Guid;
+    _worldPacket << WowAccountGuid;
+    _worldPacket << uint32(VirtualRealmAddress);
+    _worldPacket << uint8(Status);
+    _worldPacket << uint32(AreaID);
+    _worldPacket << uint32(Level);
+    _worldPacket << int8(ClassID);
+    _worldPacket << SizedString::BitsSize<10>(Notes);
+    _worldPacket.FlushBits();
+
+    _worldPacket << SizedString::Data(Notes);
+
+    return &_worldPacket;
+}
+
+ByteBuffer& operator>>(ByteBuffer& data, QualifiedGUID& qGuid)
+{
+    data >> qGuid.VirtualRealmAddress;
+    data >> qGuid.Guid;
+
+    return data;
+}
+
+void AddFriend::Read()
+{
+    _worldPacket >> SizedString::BitsSize<9>(Name);
+    _worldPacket >> SizedString::BitsSize<9>(Notes);
+    _worldPacket >> SizedString::Data(Name);
+    _worldPacket >> SizedString::Data(Notes);
+}
+
+void DelFriend::Read()
+{
+    _worldPacket >> Player;
+}
+
+void SetContactNotes::Read()
+{
+    _worldPacket >> Player;
+    _worldPacket >> SizedString::BitsSize<10>(Notes);
+    _worldPacket >> SizedString::Data(Notes);
+}
+
+void AddIgnore::Read()
+{
+    _worldPacket >> SizedString::BitsSize<9>(Name);
+    _worldPacket >> AccountGUID;
+    _worldPacket >> SizedString::Data(Name);
+}
+
+void DelIgnore::Read()
+{
+    _worldPacket >> Player;
+}
+
+WorldPacket const* SocialContractRequestResponse::Write()
+{
+    _worldPacket << Bits<1>(ShowSocialContract);
+    _worldPacket.FlushBits();
+
+    return &_worldPacket;
+}
+}

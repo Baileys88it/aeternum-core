@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: How to compile (TrinityCore wiki)
+    url: https://trinitycore.info/
+    about: Build and install guides for the TrinityCore base the engine derives from.

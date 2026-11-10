@@ -1,0 +1,15 @@
+{
+  "id": "mod_data_mutator",
+  "version": "0.2.0",
+  "abiVersion": 1,
+  "runtime": "native",
+  "library": "mod_data_mutator.dll",
+  "integrity": {
+    "files": [
+      {
+        "path": "mod_data_mutator.dll",
+        "sha256": "4330edff1c2a0cf6c5560c219ad6a247b1e6eed5f4fbb5e020892b9a38adefdc"
+      }
+    ]
+  }
+}

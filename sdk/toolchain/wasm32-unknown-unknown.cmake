@@ -1,0 +1,21 @@
+# Isolated guest toolchain. Never used as the host/MSVC compiler.
+# cmake -S sdk/toolchain -B <out> -DCMAKE_TOOLCHAIN_FILE=sdk/toolchain/wasm32-unknown-unknown.cmake
+#   -DAETERNUM_WASM_CLANG=<wasi-sdk>/bin/clang[.exe]
+if(NOT EXISTS "${AETERNUM_WASM_CLANG}")
+  message(FATAL_ERROR "AETERNUM_WASM_CLANG must point at LLVM/Clang (WASI SDK)")
+endif()
+get_filename_component(_AETERNUM_WASM_BIN "${AETERNUM_WASM_CLANG}" DIRECTORY)
+if(EXISTS "${_AETERNUM_WASM_BIN}/clang++${CMAKE_EXECUTABLE_SUFFIX}")
+  set(CMAKE_CXX_COMPILER "${_AETERNUM_WASM_BIN}/clang++${CMAKE_EXECUTABLE_SUFFIX}" CACHE FILEPATH "" FORCE)
+else()
+  set(CMAKE_CXX_COMPILER "${AETERNUM_WASM_CLANG}" CACHE FILEPATH "" FORCE)
+endif()
+set(CMAKE_C_COMPILER "${AETERNUM_WASM_CLANG}" CACHE FILEPATH "" FORCE)
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR wasm32)
+set(CMAKE_C_COMPILER_TARGET wasm32-unknown-unknown)
+set(CMAKE_CXX_COMPILER_TARGET wasm32-unknown-unknown)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)

@@ -1,0 +1,26 @@
+# Forever client profile â€” data only in M2 (not loaded at runtime yet)
+profile_id: "1.60.1.70862"
+product: "1.60.1"
+client_build: 70862
+label: "Forever Classic 1.60.1 build 70862"
+status: active
+runtime_loaded: foundation
+extra_inserts:
+  Classic.ClientExtraInserts:
+    - "0x440071"
+    - "0x440072"
+  Classic.ServerExtraInserts:
+    - "0x470125"
+critical_client_opcodes:
+  CMSG_CREATE_CHARACTER:
+    wire: "0x440070"
+    core_after_remap: "0x430070"
+  CMSG_CHECK_CHARACTER_NAME_AVAILABILITY:
+    wire: "0x440073"
+    core_after_remap: "0x430071"
+auth:
+  bnet_port: 1119
+  world_port: 8085
+  realm_gamebuild: 70862
+  build_info_required: true
+created: "2026-11-05"

@@ -1,0 +1,9 @@
+@echo off
+setlocal EnableExtensions
+title Aeternum STOP_TESTINST
+echo === Aeternum _testinst_iem1 STOP (path-scoped) ===
+echo Does NOT touch Trinity or _public_iem1.
+echo IT: Arresto graduale announce + server shutdown 120s, poi force solo sui PID di questo path.
+echo EN: Graceful announce + server shutdown 120s, then force only this folder's PIDs.
+powershell -NoProfile -ExecutionPolicy Bypass -File "@AETERNUM_TOOLS_DIR@\Stop-AeternumPathScoped.ps1" -RuntimeDir "@AETERNUM_TESTINST_BIN_DIR@" -ShutdownDelay 120 -ExitTimeoutSec 180 -WindowTitlePrefixes "Aeternum-testinst-"
+exit /b %ERRORLEVEL%
