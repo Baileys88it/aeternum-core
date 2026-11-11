@@ -7,7 +7,9 @@ Checks
   * Windows drive paths outside C:\\Program Files style examples and user profile paths;
   * IPv4 addresses other than loopback, unspecified and documentation ranges;
   * battle.net login hostnames;
-  * e-mail addresses other than noreply / example addresses.
+  * e-mail addresses other than noreply / example addresses;
+  * wording that ties a file to one running deployment ("live <project>");
+  * SQL that pins realmlist.gamebuild for realm id 70 (a deployment detail, not engine setup).
 
 Usage
   check_neutrality.py --all              scan every tracked file
@@ -40,6 +42,8 @@ IPV4_RE = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
 HOST_RE = re.compile(r"[a-z0-9-]+\.actual\.battle\.net", re.I)
 MAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
 MAIL_OK = re.compile(r"(noreply|no-reply)@|@(example\.(com|org|net|invalid)|users\.noreply\.github\.com)$", re.I)
+LIVE_RE = re.compile(r"\blive\s+aeternum\b", re.I)
+REALM_BUILD_RE = re.compile(r"update\s+`?realmlist`?\s+set\s+`?gamebuild`?\s*=\s*\d+\s+where\s+`?id`?\s*=\s*70\b", re.I)
 DOC_NETS = [ipaddress.ip_network(n) for n in ("192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24")]
 
 
@@ -74,7 +78,9 @@ def check_text(text):
             if p and hashlib.sha256(p.encode()).hexdigest() in FORBIDDEN_TOKEN_SHA256:
                 problems.append("forbidden word (hash match)")
                 break
-    for rx, label in ((DRIVE_RE, "drive or user-profile path"), (HOST_RE, "battle.net login hostname")):
+    for rx, label in ((DRIVE_RE, "drive or user-profile path"), (HOST_RE, "battle.net login hostname"),
+                      (LIVE_RE, "reference to a live deployment"),
+                      (REALM_BUILD_RE, "realmlist.gamebuild pinned for realm id 70")):
         if rx.search(text):
             problems.append(label)
     if any(ip_is_problem(m.group(0)) for m in IPV4_RE.finditer(text)):
