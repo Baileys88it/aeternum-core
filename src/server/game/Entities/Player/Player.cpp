@@ -2503,8 +2503,13 @@ void Player::InitTalentForLevel()
 {
     uint8 level = GetLevel();
     // talents base at level diff (talents = level - 9 but some can be used already)
+    // Only when the character is not on its class's default specialization already: the reset takes the specialization spells
+    // away and teaches them again, and doing that on every level gain from 2 to 9 dismissed a warlock's or hunter's pet each time
+    // (Discord 2026-11-09, with the Legacy perk Talented, whose points come at 5 to 9).
     if (level < MIN_SPECIALIZATION_LEVEL)
-        ResetTalentSpecialization();
+        if (ChrSpecializationEntry const* defaultSpec = sDB2Manager.GetDefaultChrSpecializationForClass(GetClass());
+            !defaultSpec || uint32(GetPrimarySpecialization()) != defaultSpec->ID)
+            ResetTalentSpecialization();
 
     int32 talentTiers = DB2Manager::GetNumTalentsAtLevel(level, Classes(GetClass()));
     if (!GetSession()->HasPermission(rbac::RBAC_PERM_SKIP_CHECK_MORE_TALENTS_THAN_ALLOWED))
@@ -2924,6 +2929,11 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
         return false;
     }
 
+    // Classic 1.60: Devastate 403196 is only the damage that Sunder Armor triggers with the Rune of Devastate (the client marks it
+    // never learned). Keep it out of the spellbook, also for characters that already have it saved, so it never sits on a bar.
+    if (spellId == 403196)
+        return false;
+
     if (!SpellMgr::IsSpellValid(spellInfo, this, false))
     {
         // do character spell book cleanup (all characters)
@@ -3233,8 +3243,18 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
 
             // Runeforging special case
             if ((_spell_idx->second->GetAcquireMethod() == SkillLineAbilityAcquireMethod::AutomaticCharLevel && !HasSkill(_spell_idx->second->SkillLine)) || ((_spell_idx->second->SkillLine == SKILL_RUNEFORGING) && _spell_idx->second->TrivialSkillLineRankHigh == 0))
+            {
                 if (SkillRaceClassInfoEntry const* rcInfo = sDB2Manager.GetSkillRaceClassInfo(_spell_idx->second->SkillLine, GetRace(), GetClass()))
                     LearnDefaultSkill(rcInfo);
+            }
+            // Classic 1.60: Beast Training 5149 has no skill effect and its skill line 261 (SkillRaceClassInfo Availability 0) is not a
+            // starting skill, so hunters had the spell but not the skill and the client refused the Beast Training window. Learning
+            // any Beast Training spell now gives the skill; existing hunters get it at their next login.
+            else if (_spell_idx->second->SkillLine == SKILL_BEAST_TRAINING && !HasSkill(_spell_idx->second->SkillLine))
+            {
+                if (SkillRaceClassInfoEntry const* rcInfo = sDB2Manager.GetSkillRaceClassInfo(_spell_idx->second->SkillLine, GetRace(), GetClass()))
+                    LearnDefaultSkill(rcInfo);
+            }
         }
     }
 
@@ -5853,15 +5873,20 @@ bool Player::UpdateGatherSkill(uint32 skillId, uint32 skillValue, uint32 redLeve
     uint32 greenLevel = redLevel + 50;
     uint32 grayLevel = redLevel + 100;
 
+    // The object's own trivial skill range (gameobject_template Data23 / Data24 of a chest) is the one its tooltip is coloured with
+    // (2026_11_12_00); the green rank lies half way, as on the tooltip. Without the range the classic ranks above stay as they are.
     if (GameObject const* go = Object::ToGameObject(object))
     {
-        if (go->GetGOInfo()->GetTrivialSkillLow())
-            yellowLevel = go->GetGOInfo()->GetTrivialSkillLow();
+        if (go->GetGOInfo()->GetTrivialSkillLow() || go->GetGOInfo()->GetTrivialSkillHigh())
+        {
+            if (go->GetGOInfo()->GetTrivialSkillLow())
+                yellowLevel = go->GetGOInfo()->GetTrivialSkillLow();
 
-        if (go->GetGOInfo()->GetTrivialSkillHigh())
-            grayLevel = go->GetGOInfo()->GetTrivialSkillHigh();
+            if (go->GetGOInfo()->GetTrivialSkillHigh())
+                grayLevel = go->GetGOInfo()->GetTrivialSkillHigh();
 
-        greenLevel = (yellowLevel + grayLevel) / 2;
+            greenLevel = (yellowLevel + grayLevel) / 2;
+        }
     }
 
     // For skinning and Mining chance decrease with level. 1-74 - no decrease, 75-149 - 2 times, 225-299 - 8 times
@@ -12671,6 +12696,8 @@ void Player::VisualizeItem(uint8 slot, Item* pItem)
         if (IsInWorld())
             GetSession()->GetCollectionMgr()->AddItemAppearance(pItem);
     }
+    else if (pItem->GetBonding() == BIND_NONE && IsInWorld())
+        GetSession()->GetCollectionMgr()->AddItemAppearance(pItem);
 
     TC_LOG_DEBUG("entities.player.items", "Player::SetVisibleItemSlot: Player '{}' ({}), Slot: {}, Item: {}",
         GetName(), GetGUID().ToString(), slot, pItem->GetEntry());
@@ -16764,9 +16791,12 @@ bool Player::GiveQuestSourceItem(Quest const* quest)
     uint32 srcitem = quest->GetSrcItemId();
     if (srcitem > 0)
     {
-        // Don't give source item if it is the same item used to start the quest
+        // Don't give source item if it is the same item used to start the quest.
+        // Only when the player really holds it: some quests (The Treaty of Understanding 98423) are started from
+        // a gameobject, and their source item also names the quest as its start quest. Without the item check the
+        // player never got the item and could not finish the quest.
         ItemTemplate const* itemTemplate = ASSERT_NOTNULL(sObjectMgr->GetItemTemplate(srcitem));
-        if (quest->GetQuestId() == itemTemplate->GetStartQuest())
+        if (quest->GetQuestId() == itemTemplate->GetStartQuest() && HasItemCount(srcitem, 1, true))
             return true;
 
         uint32 count = quest->GetSrcItemCount();
@@ -32412,13 +32442,19 @@ void Player::UpdateTransmogOutfitSlots(uint32 id, std::span<WorldPackets::Transm
     auto outfit = m_values.ModifyValue(&Player::m_activePlayerData)
         .ModifyValue(&UF::ActivePlayerData::TransmogOutfits, id);
 
-    uint32 outfitSlotIndex = 0;
+    // Each slot is written to its own place in the outfit (every outfit holds every slot, at its SlotIndex, as CreateTransmogOutfit and
+    // _LoadTransmogOutfits lay it out). This walked the stored slots forward once and expected the client's slots in the same order,
+    // but the 1.60 client does not always send them sorted (see the price in HandleTransmogOutfitUpdateSlots): a slot that came after a
+    // higher one was written over the stored slot the walk stood on, and a slot past the last stored one ended the save. Weapons and
+    // the cloak kept their new look, the armor slots did not (likely cause of Discord, shredxgod 2026-11-11: a hunter's leather outfit went back to the
+    // worn gear after saving, and the slots showed warnings).
     for (WorldPackets::Transmogrification::TransmogOutfitSlotData const& slot : slots)
     {
-        while (std::pair(*transmogOutfit->Slots[outfitSlotIndex].Slot, *transmogOutfit->Slots[outfitSlotIndex].SlotOption) < std::pair(AsUnderlyingType(slot.Slot), AsUnderlyingType(slot.SlotOption)))
-            if (++outfitSlotIndex >= transmogOutfit->Slots.size())
-                return;
+        TransmogMgr::TransmogOutfitSlotAndOptionInfo const* slotInfo = TransmogMgr::GetSlotAndOption(slot.Slot, slot.SlotOption);
+        if (!slotInfo || slotInfo->SlotIndex >= transmogOutfit->Slots.size())
+            continue;
 
+        uint32 const outfitSlotIndex = slotInfo->SlotIndex;
         auto viewedOutfitSlot = outfit.ModifyValue(&UF::TransmogOutfitData::Slots, outfitSlotIndex);
         SetUpdateFieldValue(viewedOutfitSlot.ModifyValue(&UF::TransmogOutfitSlotData::Slot), AsUnderlyingType(slot.Slot));
         SetUpdateFieldValue(viewedOutfitSlot.ModifyValue(&UF::TransmogOutfitSlotData::SlotOption), AsUnderlyingType(slot.SlotOption));
@@ -32499,6 +32535,11 @@ void Player::EquipTransmogOutfit(uint32 id, TransmogSituationTrigger trigger, Op
                     SetUpdateFieldValue(viewedOutfitSlot.ModifyValue(&UF::TransmogOutfitSlotData::IllusionDisplayType), AsUnderlyingType(TransmogOutfitDisplayType::Disabled));
                     break;
                 case TransmogOutfitSlotOption::None:
+                case TransmogOutfitSlotOption::ArmorCloth:
+                case TransmogOutfitSlotOption::ArmorLeather:
+                case TransmogOutfitSlotOption::ArmorMail:
+                case TransmogOutfitSlotOption::ArmorPlate:
+                    // no illusions on armor
                     break;
                 default:
                     SetUpdateFieldValue(viewedOutfitSlot.ModifyValue(&UF::TransmogOutfitSlotData::IllusionDisplayType), AsUnderlyingType(TransmogOutfitDisplayType::Equipped));
@@ -32558,6 +32599,9 @@ void Player::_SaveCharacterSelectOutfit(CharacterDatabaseTransaction trans) cons
                 transmogSlotOption = static_cast<TransmogOutfitSlotOption>(m_activePlayerData->TransmogMetadata->StampedOptionOffHand);
                 break;
             default:
+                // Classic 1.60: armor slots have one outfit slot per armor type, picked by the armor worn there
+                if (Item const* equipped = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                    transmogSlotOption = equipped->GetTemplate()->GetWeaponTransmogOutfitSlotOption();
                 break;
         }
 
