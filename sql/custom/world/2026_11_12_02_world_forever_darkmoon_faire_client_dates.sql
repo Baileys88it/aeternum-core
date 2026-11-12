@@ -7,7 +7,6 @@
 -- Mulgore: 2026-10-05, 2026-12-07, 2027-02-08 ... So the Faire of this month opened on 2026-11-09, a week after ours.
 --
 -- With holiday and holidayStage set the server reads start and length from those dates (GameEventMgr::SetHolidayEventTime) and,
--- since 2026_11_12, moves on to the next date when a run ends. The buildings (23 / 24) follow the same dates: the client has no
--- earlier setup stage for them, so they stand for the week of the Faire (the vanilla Friday setup is not in this client's data).
-UPDATE `game_event` SET `holiday` = 263, `holidayStage` = 1 WHERE `eventEntry` IN (4, 23);
-UPDATE `game_event` SET `holiday` = 264, `holidayStage` = 1 WHERE `eventEntry` IN (5, 24);
+-- since 2026_11_12, moves on to the next date when a run ends. In this database the Faire events are 3 (Elwynn Forest) and 23 (Thunder Bluff).
+UPDATE `game_event` SET `holiday` = 263, `holidayStage` = 1 WHERE `eventEntry` = 3;
+UPDATE `game_event` SET `holiday` = 264, `holidayStage` = 1 WHERE `eventEntry` = 23;
