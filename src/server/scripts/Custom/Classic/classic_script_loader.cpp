@@ -206,6 +206,7 @@ void AddSC_classic_talents_mage_shaman();
 void AddSC_classic_talents_warrior_rogue_hunter();
 void AddSC_classic_talents_priest_paladin();
 void AddSC_classic_talents_warlock_druid();
+void AddSC_classic_talents_forever_procs();
 void AddSC_classic_armory_commands();
 void AddSC_classic_legacy_commands();
 void AddSC_classic_discord_commands();
@@ -413,6 +414,7 @@ void AddClassicScripts()
     AddSC_classic_talents_warrior_rogue_hunter();
     AddSC_classic_talents_priest_paladin();
     AddSC_classic_talents_warlock_druid();
+    AddSC_classic_talents_forever_procs();
     AddSC_classic_armory_commands();
     AddSC_classic_legacy_commands();
     AddSC_classic_discord_commands();
