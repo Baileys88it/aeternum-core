@@ -21,6 +21,7 @@
 #include "AchievementPackets.h"
 #include "AreaTriggerPackets.h"
 #include "Battleground.h"
+#include "CellImpl.h"
 #include "CharacterPackets.h"
 #include "Chat.h"
 #include "CinematicMgr.h"
@@ -34,6 +35,7 @@
 #include "GameObject.h"
 #include "GameTime.h"
 #include "GossipDef.h"
+#include "GridNotifiersImpl.h"
 #include "Group.h"
 #include "Guild.h"
 #include "GuildMgr.h"
@@ -428,8 +430,13 @@ void WorldSession::HandleStandStateChangeOpcode(WorldPackets::Misc::StandStateCh
         || packet.StandState == UNIT_STAND_STATE_KNEEL;
     if (restingPose)
     {
-        GameObject* fire = _player->FindNearestGameObjectOfType(GAMEOBJECT_TYPE_SPELL_FOCUS, 15.0f);
-        bool const atCampfire = fire && fire->GetGOInfo()->spellFocus.spellFocusType == 4;
+        // any campfire focus in range, searched as a spell's focus requirement is: the nearest spell focus of any kind missed the
+        // fire when a forge or anvil stood closer (Kharanos)
+        GameObject* fire = nullptr;
+        Trinity::GameObjectFocusCheck check(_player, 4);
+        Trinity::GameObjectSearcher<Trinity::GameObjectFocusCheck> searcher(_player, fire, check);
+        Cell::VisitGridObjects(_player, searcher, 15.0f);
+        bool const atCampfire = fire != nullptr;
         if (atCampfire)
         {
             if (!_player->HasAura(SPELL_CAMPFIRE_REST))

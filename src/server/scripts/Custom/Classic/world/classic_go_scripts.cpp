@@ -22,8 +22,10 @@
 #include "DB2Stores.h"
 #include "AreaTrigger.h"
 #include "AreaTriggerAI.h"
+#include "CellImpl.h"
 #include "GameObject.h"
 #include "GameObjectAI.h"
+#include "GridNotifiersImpl.h"
 #include "Player.h"
 #include "SharedDefines.h"
 #include "Creature.h"
@@ -174,8 +176,12 @@ static void CastCampBuff(Unit* target, uint32 buff)
 // the campfire (spell focus 4) the player is resting at, nullptr if none is close enough
 static GameObject* FindCampfire(Unit* unit)
 {
-    GameObject* fire = unit->FindNearestGameObjectOfType(GAMEOBJECT_TYPE_SPELL_FOCUS, CAMPFIRE_RANGE);
-    return fire && fire->GetGOInfo()->spellFocus.spellFocusType == SPELL_FOCUS_CAMPFIRE ? fire : nullptr;
+    // searched as a spell's focus requirement is: the nearest spell focus of any kind missed the fire when a forge or anvil stood closer
+    GameObject* fire = nullptr;
+    Trinity::GameObjectFocusCheck check(unit, SPELL_FOCUS_CAMPFIRE);
+    Trinity::GameObjectSearcher<Trinity::GameObjectFocusCheck> searcher(unit, fire, check);
+    Cell::VisitGridObjects(unit, searcher, CAMPFIRE_RANGE);
+    return fire;
 }
 
 class classic_spell_campfire_rest : public AuraScript

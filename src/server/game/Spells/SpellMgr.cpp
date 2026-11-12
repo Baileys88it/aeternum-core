@@ -3616,6 +3616,13 @@ void SpellMgr::LoadSpellInfoCorrections()
         });
     }
 
+    // Forever Skyborne racial Skysight: its buff (Elemental Blessing 1259688) also raises mounted speed, so it can be cast while
+    // mounted (client row through hotfixes 2026_11_09_40)
+    ApplySpellFix({ 1259686 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Attributes |= SPELL_ATTR0_ALLOW_WHILE_MOUNTED;
+    });
+
     // Forever quest Testing the Wells: the Well Testing Kit's dummy (1258773) aims at a "nearby entry" that no data names; it hits the
     // caster, and classic_spell_quest_testing_the_wells gives the sample next to a well
     ApplySpellFix({ 1258773 }, [](SpellInfo* spellInfo)
