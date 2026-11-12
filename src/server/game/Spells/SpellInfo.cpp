@@ -2951,19 +2951,9 @@ void SpellInfo::_LoadSpellSpecific()
             }
             case SPELLFAMILY_WARLOCK:
             {
-                // Banes. The Forever client names Curse of Agony and Curse of Doom Bane, and their tooltips say "Only one Bane per
-                // Warlock can be active on any one target", while every Curse says "Only one Curse per Warlock": a Bane and a Curse of
-                // the same warlock stand on one target together. They still dispel as curses, so every rank is listed here.
-                switch (Id)
-                {
-                    case 980: case 1014: case 6217: case 11711: case 11712: case 11713: // Bane of Agony, ranks 1-6
-                    case 603:                                                         // Bane of Doom
-                    case 1225228:                                                     // Bane of Havoc (Forever)
-                    case 80240:                                                       // Bane of Havoc (Cataclysm)
-                        return SPELL_SPECIFIC_BANE;
-                    default:
-                        break;
-                }
+                // Warlock (Bane of Doom | Bane of Agony | Bane of Havoc)
+                if (Id == 603 || Id ==  980 || Id == 80240)
+                    return SPELL_SPECIFIC_BANE;
 
                 // only warlock curses have this
                 if (Dispel == DISPEL_CURSE)
