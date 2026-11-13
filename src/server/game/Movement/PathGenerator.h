@@ -113,7 +113,7 @@ class TC_GAME_API PathGenerator
         void SetStartPosition(G3D::Vector3 const& point) { _startPosition = point; }
         void SetEndPosition(G3D::Vector3 const& point) { _actualEndPosition = point; _endPosition = point; }
         void SetActualEndPosition(G3D::Vector3 const& point) { _actualEndPosition = point; }
-        void NormalizePath();
+        void NormalizePath(bool meshPoints = true);
 
         void Clear()
         {

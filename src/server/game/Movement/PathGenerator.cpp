@@ -628,10 +628,27 @@ void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoin
     TC_LOG_DEBUG("maps.mmaps", "++ PathGenerator::BuildPointPath path type {} size {} poly-size {}", _type, pointCount, _polyLength);
 }
 
-void PathGenerator::NormalizePath()
+// Every path point lies on a walkable navmesh polygon. The height probe can miss the floor model under it (a gap in a WMO floor) and
+// hand back the terrain grid below; a point moved that far down puts the unit under the floor. A drop of more than kMaxNormalizeDrop
+// below the polygon is that, not a correction of the mesh's height error, and the polygon's height is kept (Karrz1 forever 0.1.34).
+// meshPoints false (BuildShortcut: the caller's destination, not a navmesh point): every point takes the probed height, as before.
+void PathGenerator::NormalizePath(bool meshPoints)
 {
+    constexpr float kMaxNormalizeDrop = 6.0f;
+    // A unit that walks into water without swimming (an amphibious creature: the Durotar surf crawlers) crosses navmesh water
+    // polygons, and those lie on the water surface. Its point belongs on the bed below, however deep: left on the surface, the spline
+    // lifted it out of the water and the next position update dropped it back (port of Karrz1 113756ea48).
+    Unit const* unit = _source->ToUnit();
+    bool const walksWaterBed = unit && !unit->CanSwim() && !unit->CanFly();
     for (uint32 i = 0; i < _pathPoints.size(); ++i)
-        _source->UpdateAllowedPositionZ(_pathPoints[i].x, _pathPoints[i].y, _pathPoints[i].z);
+    {
+        float z = _pathPoints[i].z;
+        _source->UpdateAllowedPositionZ(_pathPoints[i].x, _pathPoints[i].y, z);
+        bool const throughWater = meshPoints && walksWaterBed && z < _pathPoints[i].z - kMaxNormalizeDrop
+            && _source->GetMap()->IsInWater(_source->GetPhaseShift(), _pathPoints[i].x, _pathPoints[i].y, _pathPoints[i].z - 0.5f);
+        if (!meshPoints || z >= _pathPoints[i].z - kMaxNormalizeDrop || throughWater)
+            _pathPoints[i].z = z;
+    }
 }
 
 // A segment shorter than 0.1 y makes MoveSplineInitArgs::_checkPathLengths() reject the whole spline and the unit does not move.
@@ -674,7 +691,7 @@ void PathGenerator::BuildShortcut()
     _pathPoints[0] = GetStartPosition();
     _pathPoints[1] = GetActualEndPosition();
 
-    NormalizePath();
+    NormalizePath(/*meshPoints*/ false);
 
     _type = PATHFIND_SHORTCUT;
 }
